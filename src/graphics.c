@@ -45,10 +45,18 @@ int draw_line(P_Line line)
 
     for (i8 x = x0; x <= x1; x++)
     {
-        if (steep)
-            graphic_pixel_set(y, x);
-        else
-            graphic_pixel_set(x, y);
+        if (steep) {
+            // Check boundaries before drawing
+            if (y >= 0 && y < 128 && x >= 0 && x < 64) {
+                graphic_pixel_set(y, x);
+            }
+        }
+        else {
+            // Check boundaries before drawing
+            if (x >= 0 && x < 128 && y >= 0 && y < 64) {
+                graphic_pixel_set(x, y);
+            }
+        }
 
         error += delta_y;
         if (error >= delta_x)
@@ -132,8 +140,14 @@ void draw_object(P_Object obj)
     const int y = obj->pos_y;
     P_Point   arr = obj->geo->px;
 
-    for (char i = 0; i < MAX_SIZE; i++)
-        graphic_pixel_set(x + arr[i].x, y + arr[i].y);
+    for (char i = 0; i < obj->geo->num_points; i++) {
+        int px = x + arr[i].x;
+        int py = y + arr[i].y;
+        // Only draw if within screen bounds
+        if (px >= 0 && px < 128 && py >= 0 && py < 64) {
+            graphic_pixel_set(px, py);
+        }
+    }
 }
 
 
@@ -146,10 +160,15 @@ void clear_object(P_Object obj)
     const int x = obj->pos_x;
     const int y = obj->pos_y;
     P_Point   arr = obj->geo->px;
-    const char max_size = MAX_SIZE;
 
-    for (int i = 0; i < max_size; i++)
-        graphic_pixel_clear(x + arr[i].x, y + arr[i].y);
+    for (int i = 0; i < obj->geo->num_points; i++) {
+        int px = x + arr[i].x;
+        int py = y + arr[i].y;
+        // Only clear if within screen bounds
+        if (px >= 0 && px < 128 && py >= 0 && py < 64) {
+            graphic_pixel_clear(px, py);
+        }
+    }
 }
 
 

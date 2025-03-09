@@ -27,6 +27,15 @@ static systick_t *systick = (systick_t*)SYSTICK;
 #define SCREEN_HEIGHT     64
 #define MAX_LIVES         3
 
+// Helper functions for min and max
+int min(int a, int b) {
+    return a < b ? a : b;
+}
+
+int max(int a, int b) {
+    return a > b ? a : b;
+}
+
 // Setup
 void app_init(void)
 {
@@ -384,21 +393,47 @@ init_game:
     brick_count = init_bricks(bricks, brick_active);
 
 new_life:
+    // Clear entire screen to start fresh
     graphic_clear_screen();
     
-    // Redraw active bricks
+    // Redraw active bricks completely from scratch
     for (int i = 0; i < BRICK_ROWS * BRICK_COLS; i++) {
         if (brick_active[i]) {
+            // Create a fresh brick rect with the original parameters
+            int row = i / BRICK_COLS;
+            int col = i % BRICK_COLS;
+            
+            int brick_margin_x = 3;
+            int brick_margin_y = 3;
+            int start_x = 4;
+            int start_y = 4;
+            
+            // Calculate brick width like in init_bricks
+            int actual_brick_width = (SCREEN_WIDTH - 2*start_x - (BRICK_COLS-1)*brick_margin_x) / BRICK_COLS;
+            
+            // Recreate the brick with exact original dimensions
+            Point origin = {
+                start_x + col * (actual_brick_width + brick_margin_x),
+                start_y + row * (BRICK_HEIGHT + brick_margin_y)
+            };
+            Point dimen = {actual_brick_width, BRICK_HEIGHT};
+            
+            // Update the brick in the array and redraw it
+            bricks[i].origin = origin;
+            bricks[i].dimen = dimen;
             draw_rect(&bricks[i]);
         }
     }
     
+    // Make sure ball and paddle are properly cleared
+    ball.clear(&ball);
+    paddle.clear(&paddle);
     reset_game_objects(&ball, &paddle);
     
     // Display game info
     ascii_command(0b00000001, delay_milli, 2); // Clear display
     
-    char breakout[] = "Breakout - Lv ";
+    char breakout[] = "Breakout - Lvl ";
     
     ascii_goto(1, 1);
     char *s = breakout;
@@ -506,9 +541,15 @@ new_life:
                     score += 10;
                     display_game_info(score, lives);
                     
-                    // Efficiently clear the brick from the screen
-                    for (int j = bricks[i].origin.x - 1; j <= bricks[i].origin.x + bricks[i].dimen.x + 1; j++) {
-                        for (int k = bricks[i].origin.y - 1; k <= bricks[i].origin.y + bricks[i].dimen.y + 1; k++) {
+                    // Clear the entire brick area properly
+                    // First clear a slightly larger area to ensure all pixels are removed
+                    int clear_x_start = max(0, bricks[i].origin.x - 1);
+                    int clear_y_start = max(0, bricks[i].origin.y - 1);
+                    int clear_x_end = min(SCREEN_WIDTH - 1, bricks[i].origin.x + bricks[i].dimen.x + 1);
+                    int clear_y_end = min(SCREEN_HEIGHT - 1, bricks[i].origin.y + bricks[i].dimen.y + 1);
+                    
+                    for (int j = clear_x_start; j <= clear_x_end; j++) {
+                        for (int k = clear_y_start; k <= clear_y_end; k++) {
                             graphic_pixel_clear(j, k);
                         }
                     }
